@@ -1,0 +1,179 @@
+// Luggo website + beacon shop data model.
+// PostgreSQL everywhere: a local `luggo` database in development and a database on the
+// DigitalOcean managed cluster in production (the same cluster as nije3d).
+// Every table carries a `luggo_` prefix so it can never collide with another app's
+// tables, even if it ends up sharing a database.
+// Money is always stored as integer cents (EUR, VAT included).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Migrations bypass the PgBouncer pool (transaction mode can't run them); locally the same URL.
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// A beacon pack: "Single", "Family 3-pack", "Traveler 5-pack".
+model Product {
+  id         String         @id @default(cuid())
+  slug       String         @unique
+  name       String
+  units      Int            @default(1) // beacons in the pack
+  priceCents Int
+  note       String         @default("") // "3 beacons · save 14%"
+  badge      String         @default("") // "Most popular"
+  isDefault  Boolean        @default(false) // pre-selected in the shop
+  sort       Int            @default(0)
+  active     Boolean        @default(true)
+  images     ProductImage[]
+  orderItems OrderItem[]
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@map("luggo_products")
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  key       String // storage key (without size suffix)
+  alt       String  @default("")
+  width     Int     @default(0)
+  height    Int     @default(0)
+  sort      Int     @default(0)
+
+  @@map("luggo_product_images")
+}
+
+model ShippingZone {
+  id        String  @id @default(cuid())
+  key       String  @unique // NL, BE, EU
+  name      String
+  countries String  @default("") // comma-separated ISO-3166 alpha-2, empty = fallback zone
+  rateCents Int
+  freeFromCents Int? // free shipping from this subtotal; null = never
+  transit   String  @default("") // "1–2 working days"
+  sort      Int     @default(0)
+  active    Boolean @default(true)
+
+  @@map("luggo_shipping_zones")
+}
+
+model Order {
+  id                    String       @id @default(cuid())
+  number                String       @unique // LUG-1234
+  status                String       @default("pending_payment")
+  // pending_payment → paid → packed → shipped → delivered | cancelled | refunded
+  email                 String
+  phone                 String       @default("")
+  firstName             String
+  lastName              String
+  street                String
+  houseNo               String
+  postcode              String
+  city                  String
+  country               String // ISO alpha-2
+  zoneKey               String
+  zoneName              String
+  paymentMethod         String       @default("")
+  subtotalCents         Int
+  shippingCents         Int
+  vatCents              Int          @default(0)
+  totalCents            Int
+  currency              String       @default("EUR")
+  pspPaymentId          String?      @unique // Stripe PaymentIntent id
+  stripeSessionId       String?      @unique
+  carrier               String       @default("") // postnl | dhl | dpd | other
+  trackingCode          String       @default("")
+  notes                 String       @default("") // internal
+  stockDeducted         Boolean      @default(false)
+  items                 OrderItem[]
+  events                OrderEvent[]
+  paidAt                DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@index([status, createdAt])
+  @@map("luggo_orders")
+}
+
+model OrderItem {
+  id             String   @id @default(cuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String?
+  product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name           String // snapshot, "Family 3-pack"
+  units          Int // beacons per pack, snapshot
+  qty            Int
+  unitPriceCents Int
+
+  @@map("luggo_order_items")
+}
+
+// Status history: drives the tracking timeline and doubles as the audit log.
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String
+  note      String   @default("")
+  internal  Boolean  @default(false) // hidden from the customer timeline
+  createdAt DateTime @default(now())
+
+  @@map("luggo_order_events")
+}
+
+model FaqItem {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  sort      Int      @default(0)
+  active    Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  @@map("luggo_faq_items")
+}
+
+// CMS pages: privacy statement, shipping & returns.
+model Page {
+  id        String   @id @default(cuid())
+  slug      String   @unique // privacy | shipping
+  kicker    String   @default("")
+  title     String
+  intro     String   @default("")
+  updatedOn String   @default("") // "30 September 2026", shown under the intro
+  sections  String   @default("[]") // JSON [{ heading, body }]; body paragraphs split by a blank line
+  published Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  @@map("luggo_pages")
+}
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("luggo_subscribers")
+}
+
+// Site content and settings, one JSON document per key ("content").
+model Setting {
+  key       String   @id
+  json      String
+  updatedAt DateTime @updatedAt
+
+  @@map("luggo_settings")
+}
+
+model Counter {
+  name  String @id
+  value Int
+
+  @@map("luggo_counters")
+}

@@ -1,0 +1,44 @@
+{
+  "name": "luggo-site",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3020",
+    "build": "prisma generate && next build",
+    "start": "next start -p ${PORT:-3000}",
+    "start:prod": "tsx scripts/migrate.ts && tsx prisma/seed.ts --base && next start -p ${PORT:-3000}",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:seed:base": "tsx prisma/seed.ts --base",
+    "db:studio": "prisma studio",
+    "setup": "prisma generate && prisma migrate dev && tsx prisma/seed.ts",
+    "icons": "tsx scripts/make-icons.ts",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1132.0",
+    "@prisma/client": "^6.19.3",
+    "next": "^16.3.5",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "server-only": "^0.0.1",
+    "sharp": "^0.35.4",
+    "stripe": "^22.6.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}

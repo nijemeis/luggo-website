@@ -1,0 +1,103 @@
+# DigitalOcean App Platform spec for the Luggo website + beacon shop.
+# Same shape as nije3d's: one web service in Toronto next to the shared managed cluster.
+# Import in the DO console (Apps → Create → "Edit your app spec"), or:
+#   doctl apps create --spec .do/app.yaml
+# Values marked SECRET are entered in the DO UI, never committed.
+name: luggo-site
+region: tor
+
+services:
+  - name: web
+    github:
+      repo: nijemeis/luggo-website
+      branch: main
+      deploy_on_push: true
+    environment_slug: node-js
+    build_command: npm ci && npm run build
+    # Single instance: migrations + base seed run on start, so no separate job is needed.
+    run_command: npm run start:prod
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    instance_count: 1
+    http_port: 8080
+    health_check:
+      http_path: /api/health
+      initial_delay_seconds: 20
+      period_seconds: 15
+      failure_threshold: 3
+    routes:
+      - path: /
+    envs:
+      # Pooled (PgBouncer, transaction mode) URL — set in the DO UI as a SECRET:
+      #   <luggo-pool URI>&pgbouncer=true&connection_limit=5  (schema=luggo is added by the app)
+      - key: DATABASE_URL
+        type: SECRET
+        value: REPLACE_WITH_POOL_URL
+        scope: RUN_AND_BUILD_TIME
+      # Direct cluster URL for Prisma migrations (PgBouncer can't run them); scripts/migrate.ts adds schema=luggo.
+      - key: DIRECT_DATABASE_URL
+        value: ${luggo-db.DATABASE_URL}
+        scope: RUN_AND_BUILD_TIME
+      - key: NODE_ENV
+        # RUN_TIME only — at build time it would strip devDependencies (prisma, typescript).
+        value: production
+        scope: RUN_TIME
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://luggo.net
+        scope: RUN_AND_BUILD_TIME
+      - key: ADMIN_PASSWORD
+        type: SECRET
+        value: REPLACE_IN_DO_UI
+        scope: RUN_TIME
+      - key: AUTH_SECRET
+        # openssl rand -hex 32
+        type: SECRET
+        value: REPLACE_IN_DO_UI
+        scope: RUN_TIME
+      # --- Files: DigitalOcean Spaces (S3-compatible). Mandatory in production. ---
+      - key: S3_BUCKET
+        value: luggo-files
+        scope: RUN_TIME
+      - key: S3_REGION
+        value: tor1
+        scope: RUN_TIME
+      - key: S3_ENDPOINT
+        value: https://tor1.digitaloceanspaces.com
+        scope: RUN_TIME
+      - key: S3_ACCESS_KEY_ID
+        type: SECRET
+        value: REPLACE_IN_DO_UI
+        scope: RUN_TIME
+      - key: S3_SECRET_ACCESS_KEY
+        type: SECRET
+        value: REPLACE_IN_DO_UI
+        scope: RUN_TIME
+      # --- Payments (Stripe). Empty = the checkout refuses orders in production. ---
+      - key: STRIPE_SECRET_KEY
+        type: SECRET
+        value: ""
+        scope: RUN_TIME
+      - key: STRIPE_WEBHOOK_SECRET
+        type: SECRET
+        value: ""
+        scope: RUN_TIME
+      # --- Email (Resend). Empty = emails are only logged. ---
+      - key: RESEND_API_KEY
+        type: SECRET
+        value: ""
+        scope: RUN_TIME
+      - key: EMAIL_FROM
+        value: "Luggo <orders@luggo.net>"
+        scope: RUN_TIME
+      - key: SHOP_NOTIFY_EMAIL
+        value: ""
+        scope: RUN_TIME
+
+databases:
+  # The EXISTING managed Postgres cluster (the one Dealiteful and nije3d use), with a
+  # separate `luggo` database on it. cluster_name must match DO → Databases exactly.
+  - name: luggo-db
+    engine: PG
+    version: "17"
+    production: true
+    cluster_name: REPLACE_WITH_YOUR_CLUSTER_NAME
+    db_name: luggo
