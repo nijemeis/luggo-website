@@ -52,8 +52,6 @@ See `.env.example`. Same variables as nije3d: `DATABASE_URL` / `DIRECT_DATABASE_
 
 Placeholders and open questions from the handoff:
 
-- **Contact email:** none yet. Set it under Admin → Settings; the contact card and footer show it once filled in. Replies to order mails go to `EMAIL_FROM`, so that needs a real mailbox (or set a reply-to).
-- **Shipping rates:** NL € 4,95, BE € 6,95, rest of EU € 9,95 are placeholders. Confirm carrier and prices under Admin → Shipping.
 - **Stock:** not tracked until you enter a number under Admin → Packs & stock.
 - **App Store / Play Store links:** Admin → Settings. Until then the buttons say “Coming soon”.
 - **Beacon photo:** Admin → Homepage copy → The beacon. Pack photos per pack are optional.

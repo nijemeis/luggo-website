@@ -18,11 +18,11 @@ const PACKS = [
   { slug: "traveler-5-pack", name: "Traveler 5-pack", units: 5, priceCents: 11900, note: "5 beacons · save 18%", badge: "", isDefault: false, sort: 2 },
 ];
 
-// Placeholder rates until the owner confirms carriers and prices (see README).
+// Starting rates (owner, 30 Sept 2026); editable under Admin → Shipping.
 const ZONES = [
-  { key: "NL", name: "Netherlands", countries: "NL", rateCents: 495, transit: "1–2 working days", sort: 0 },
-  { key: "BE", name: "Belgium", countries: "BE", rateCents: 695, transit: "2–3 working days", sort: 1 },
-  { key: "EU", name: "Rest of the EU", countries: "", rateCents: 995, transit: "3–6 working days", sort: 2 },
+  { key: "NL", name: "Netherlands", countries: "NL", rateCents: 695, transit: "1–2 working days", sort: 0 },
+  { key: "BE", name: "Belgium", countries: "BE", rateCents: 950, transit: "2–3 working days", sort: 1 },
+  { key: "EU", name: "Rest of the EU", countries: "", rateCents: 1250, transit: "3–6 working days", sort: 2 },
 ];
 
 const FAQ = [

@@ -118,7 +118,7 @@ export const DEFAULT_CONTENT: SiteContent = {
     city: "Leusden",
     country: "The Netherlands",
     phone: "+31 6 45438943",
-    email: "",
+    email: "hello@luggo.net",
     kvk: "58083111",
     vat: "NL852865867B01",
     vatRate: 21,

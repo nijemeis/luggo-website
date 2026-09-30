@@ -52,6 +52,7 @@ export async function markOrderPaid(orderId: string, opts: { paymentMethod?: str
   const vars = { units: beaconWord(units), shipTimes: content.shipping.times };
   await sendMail({
     to: order.email,
+    replyTo: content.business.email || undefined,
     subject: `${order.number} — your Luggo beacons are on their way soon`,
     html: layout(
       "Thanks for your order!",
@@ -124,7 +125,7 @@ export async function setOrderStatus(orderId: string, status: OrderStatus, note 
     refunded: { subject: `${order.number} — refunded`, title: "Refund sent.", body: p(`We’ve refunded ${money(order.totalCents)}. It usually shows up within a few working days.`) },
   };
   const m = mail[status];
-  if (m) await sendMail({ to: order.email, subject: m.subject, html: layout(m.title, m.body + (note ? p(`<em>${esc(note)}</em>`) : "") + (status === "delivered" ? "" : trackLink)) });
+  if (m) await sendMail({ to: order.email, replyTo: content.business.email || undefined, subject: m.subject, html: layout(m.title, m.body + (note ? p(`<em>${esc(note)}</em>`) : "") + (status === "delivered" ? "" : trackLink)) });
 }
 
 export function statusLabel(s: string): string {
